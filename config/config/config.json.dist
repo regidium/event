@@ -1,0 +1,13 @@
+{
+    "env": "development",
+
+    "redis": {
+        "io_chanell": "regidium_io_events",
+        "backend_chanell": "regidium_backend_events"
+    },
+
+    "backend": {
+        "url": "http://api.regidium.loc/app_dev.php/api/v1/"
+    }
+
+}
