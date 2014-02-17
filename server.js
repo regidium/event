@@ -10,13 +10,12 @@ var self = module.exports = function ()
 self.initialize = function ()
 {
     self.config = config;
-    self.client = redis.createClient();
+    self.store = redis.createClient();
     self.sub = redis.createClient();
     self.pub = redis.createClient();
     self.sub.subscribe(config.redis.io_in);
     self.sub.on('message', function (chanel, event) {
         event = JSON.parse(event);
-        console.log('New event: '+event.key+' arrived on chanel: '+chanel);
         self.handle_event(chanel, event);
     });
     console.log('Subscribed on sending successfully in chanel ' + config.redis.io_in);
@@ -43,12 +42,14 @@ self.handle_event = function (chanell, event)
         _.each(self.callbacks[event.key], function (cb) {
             cb(event.data);
         });
+    } else {
+        console.log('Нет обработчика для события ' + event.key + ' на канале ' + chanell);
     }
 };
 
-self.store = function (key, data)
+self.publish = function (key, data)
 {
-    var event = JSON.stringify(key, data)
+    var event = JSON.stringify({ key: key, data: data});
     self.pub.publish(config.redis.io_out, event);
 };
 
