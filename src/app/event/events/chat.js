@@ -17,6 +17,7 @@ var self = module.exports = function (app)
      */
     app.on('chat:create', function (data) {
         console.log('Redis chat:create');
+
         // Создаем пользователя в БД
         request.post(app.config.backend.url + 'widgets/'+data.widget_uid+'/users', {
             form: data.user_data

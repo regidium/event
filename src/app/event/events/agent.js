@@ -27,8 +27,8 @@ var self = module.exports = function (app)
      *   string widget_uid - UID виджета
      * }
      */
-    app.on('agent:disconnected', function (data) {
-        console.log('Redis agent:disconnected');
+    app.on('agent:disconnect', function (data) {
+        console.log('Redis agent:disconnect');
 
         // Удаляем данные о агента из Redis
         app.store.hdel('agents:' + data.widget_uid, data.person_uid, function(e, r) {
