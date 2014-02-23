@@ -214,4 +214,49 @@ var self = module.exports = function (app)
         });
     });
 
+    /**
+     * Запрос количества архивных сообщений
+     *
+     * @param Object data {
+     *   string widget_uid - UID виджета
+     * }
+     *
+     * @request GET widget/(Widget UID)/chats/archive
+     *
+     * @publish chat:agent:entered
+     */
+    app.on('chat:agent:enter', function (data) {
+        console.log('Redis chat:agent:enter');
+
+        // Записываем в БД
+        request.get(app.config.backend.url + 'widget/'+data.widget_uid+'/chats/archive',
+            {},
+            function (err, response, body) {
+                try {
+                    body = JSON.parse(body);
+                    // Сервер вернул ошибку
+                    if (body && body.errors) {
+                        console.log(body.errors);
+                    } else {
+                        // Добавляем агента в чат в Redis
+                        app.store.hget('chats:' + data.widget_uid, data.chat_uid, function(e, r) {
+                            var d = JSON.parse(r);
+                            var chat = d.chat;
+                            d.agent = data.person;
+
+                            // Добавляем агента в чат в Redis
+                            app.store.hset('chats:' + data.widget_uid, data.chat_uid, JSON.stringify(d), function(e2, r2) {
+                                // Оповещаем слушателей
+                                app.publish('chat:agent:entered', { chat: chat, person: data.person, widget_uid: data.widget_uid });
+                            });
+                        });
+                    }
+                } catch(e) {
+                    // Ошибка сервера
+                    console.log(body);
+                }
+            }
+        );
+    });
+
 };
