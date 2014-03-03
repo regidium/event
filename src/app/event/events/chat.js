@@ -28,9 +28,9 @@ var self = module.exports = function (app)
                 console.log(person.errors);
             } else {
                 // Создаем чат в БД
-                request.post(app.config.backend.url + 'widgets/'+data.widget_uid+'/chats', {
-                    form: { person_uid: person.uid }
-                }, function (err2, response2, chat) {
+                request.post(app.config.backend.url + 'widgets/'+data.widget_uid+'/users/'+person.user.uid+'/chats',
+                    {},
+                    function (err2, response2, chat) {
                     chat = JSON.parse(chat);
                     // Сервер вернул ошибку
                     if (chat && chat.errors) {
@@ -136,9 +136,10 @@ var self = module.exports = function (app)
 
         // Записываем в БД
         request.post(app.config.backend.url + 'widgets/'+data.widget_uid+'/chats/'+data.chat_uid+'/messages', {
-            form: { person: data.person.uid, text: data.text }
+            form: { sender_uid: data.person.uid, text: data.text }
         }, function (err, response, chat_message) {
             try {
+                console.log(chat_message);
                 chat_message = JSON.parse(chat_message);
                 // Сервер вернул ошибку
                 if (chat_message && chat_message.errors) {
@@ -173,7 +174,7 @@ var self = module.exports = function (app)
 
         request.post({
             url: app.config.backend.url + 'widgets/'+data.widget_uid+'/chats/'+data.chat_uid+'/messages',
-            form: { person: data.person.uid, text: data.text }
+            form: { sender_uid: data.person.uid, text: data.text }
         }, function (err, response, chat_message) {
                 try {
                     chat_message = JSON.parse(chat_message);
@@ -215,21 +216,22 @@ var self = module.exports = function (app)
     });
 
     /**
-     * Запрос количества архивных сообщений
+     * Запрос архивных чатов
      *
      * @param Object data {
+     *   string chat_uid   - UID чата
      *   string widget_uid - UID виджета
      * }
      *
-     * @request GET widget/(Widget UID)/chats/archive
+     * @request GET widgets/(Widget UID)/chats/archive
      *
-     * @publish chat:agent:entered
+     * @publish chat:archives:list
      */
-    app.on('chat:agent:enter', function (data) {
-        console.log('Redis chat:agent:enter');
+    app.on('chat:archives', function (data) {
+        console.log('Redis chat:archives');
 
-        // Записываем в БД
-        request.get(app.config.backend.url + 'widget/'+data.widget_uid+'/chats/archive',
+        // Читаем в БД
+        request.get(app.config.backend.url + 'widgets/'+data.widget_uid+'/chats/archive',
             {},
             function (err, response, body) {
                 try {
@@ -238,18 +240,8 @@ var self = module.exports = function (app)
                     if (body && body.errors) {
                         console.log(body.errors);
                     } else {
-                        // Добавляем агента в чат в Redis
-                        app.store.hget('chats:' + data.widget_uid, data.chat_uid, function(e, r) {
-                            var d = JSON.parse(r);
-                            var chat = d.chat;
-                            d.agent = data.person;
-
-                            // Добавляем агента в чат в Redis
-                            app.store.hset('chats:' + data.widget_uid, data.chat_uid, JSON.stringify(d), function(e2, r2) {
-                                // Оповещаем слушателей
-                                app.publish('chat:agent:entered', { chat: chat, person: data.person, widget_uid: data.widget_uid });
-                            });
-                        });
+                        // Оповещаем слушателей
+                        app.publish('chat:archives:list', body);
                     }
                 } catch(e) {
                     // Ошибка сервера
