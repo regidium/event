@@ -208,11 +208,64 @@ var self = module.exports = function (app)
     app.on('chat:disconnect', function (data) {
         console.log('Redis chat:disconnect');
 
-        // Удаляем данные о чате из Redis
-        app.store.hdel('chats:' + data.widget_uid, data.chat_uid, function(e, r) {
-            // Оповещаем слушателей об отключении чата
-            app.publish('chat:disconnected', { chat_uid: data.chat_uid, widget_uid: data.widget_uid });
-        });
+        // Читаем в БД
+        request.put(app.config.backend.url + 'widgets/'+data.widget_uid+'/chats/'+data.chat_uid+'/offline',
+            {},
+            function (err, response, body) {
+                try {
+                    body = JSON.parse(body);
+                    // Сервер вернул ошибку
+                    if (body && body.errors) {
+                        console.log(body.errors);
+                    } else {
+                        // Удаляем данные о чате из Redis
+                        app.store.hdel('chats:' + data.widget_uid, data.chat_uid, function(e, r) {
+                            // Оповещаем слушателей об отключении чата
+                            app.publish('chat:disconnected', { chat_uid: data.chat_uid, widget_uid: data.widget_uid });
+                        });
+                    }
+                } catch(e) {
+                    // Ошибка сервера
+                    console.log(body);
+                }
+            }
+        );
+    });
+
+    /**
+     * Запрос существующих чатов
+     *
+     * @param Object data {
+     *   string chat_uid   - UID чата
+     *   string widget_uid - UID виджета
+     * }
+     *
+     * @request GET widgets/(Widget UID)/chats/existed
+     *
+     * @publish chat:existed:list
+     */
+    app.on('chat:existed', function (data) {
+        console.log('Redis chat:existed');
+
+        // Читаем из БД
+        request.get(app.config.backend.url + 'widgets/'+data.widget_uid+'/chats/existed',
+            {},
+            function (err, response, body) {
+                try {
+                    body = JSON.parse(body);
+                    // Сервер вернул ошибку
+                    if (body && body.errors) {
+                        console.log(body.errors);
+                    } else {
+                        // Оповещаем слушателей
+                        app.publish('chat:existed:list', body);
+                    }
+                } catch(e) {
+                    // Ошибка сервера
+                    console.log(body);
+                }
+            }
+        );
     });
 
     /**
