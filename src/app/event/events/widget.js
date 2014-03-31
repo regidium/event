@@ -18,9 +18,7 @@ var self = module.exports = function (app)
         console.log('Redis widget:info:get');
 
         // Создаем пользователя в БД
-        request.get(app.config.backend.url + 'widgets/'+data.widget_uid, {
-            form: data.user_data
-        }, function (err, response, widget) {
+        request.get(app.config.backend.url + 'widgets/'+data.widget_uid, {}, function (err, response, widget) {
             widget = JSON.parse(widget);
             // Сервер вернул ошибку
             if (widget && widget.errors) {

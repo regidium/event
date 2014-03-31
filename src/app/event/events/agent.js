@@ -6,16 +6,21 @@ var self = module.exports = function (app)
      * Агент подключился
      *
      * @param Object data {
-     *   Object person     - персона агента,
+     *   Object agent      - данные агента,
      *   string widget_uid - UID виджета
      * }
+     *
+     * @store hset agents:(Widget UID)
+     *
+     * @publish agent:connected
      */
     app.on('agent:connect', function (data) {
         console.log('Redis agent:connect');
+
         // Записываем данные агента в Redis
-        app.store.hset('agents:' + data.widget_uid, data.person.uid, JSON.stringify({ person: data.person }), function(e, r) {
-            // Оповещаем слушателей о подключени пользователя
-            app.publish('agent:connected', { person: data.person, widget_uid: data.widget_uid });
+        app.store.hset('agents:' + data.widget_uid, data.agent.uid, JSON.stringify({ agent: data.agent }), function(e, r) {
+            // Оповещаем слушателей о подключени агента
+            app.publish('agent:connected', { agent: data.agent, widget_uid: data.widget_uid });
         });
     });
 
@@ -23,7 +28,7 @@ var self = module.exports = function (app)
      * Агент отключился
      *
      * @param Object data {
-     *   string person_uid - UID агента
+     *   string agent_uid  - UID агента
      *   string widget_uid - UID виджета
      * }
      */
@@ -31,9 +36,9 @@ var self = module.exports = function (app)
         console.log('Redis agent:disconnect');
 
         // Удаляем данные о агента из Redis
-        app.store.hdel('agents:' + data.widget_uid, data.person_uid, function(e, r) {
+        app.store.hdel('agents:' + data.widget_uid, data.agent_uid, function(e, r) {
             // Оповещаем слушателей об отключении агента
-            app.publish('agent:disconnected', { person_uid: data.person_uid, chat_uid: data.chat_uid, widget_uid: data.widget_uid });
+            app.publish('agent:disconnected', { agent_uid: data.agent_uid, widget_uid: data.widget_uid });
         });
     });
 
