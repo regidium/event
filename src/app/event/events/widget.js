@@ -19,14 +19,18 @@ var self = module.exports = function (app)
 
         // Создаем пользователя в БД
         request.get(app.config.backend.url + 'widgets/'+data.widget_uid, {}, function (err, response, widget) {
-            widget = JSON.parse(widget);
-            // Сервер вернул ошибку
-            if (widget && widget.errors) {
-                console.log(widget.errors);
-            } else {
-                widget.socket_id = data.socket_id;
-                widget.widget_uid = data.widget_uid;
-                app.publish('widget:info:sended', widget);
+            try {
+                widget = JSON.parse(widget);
+                // Сервер вернул ошибку
+                if (widget && widget.errors) {
+                    console.log(widget.errors);
+                } else {
+                    widget.socket_id = data.socket_id;
+                    widget.widget_uid = data.widget_uid;
+                    app.publish('widget:info:sended', widget);
+                }
+            } catch(e) {
+                console.log(widget);
             }
         });
     });
