@@ -121,20 +121,21 @@ var self = module.exports = function (app)
         console.log('Redis agent:remove');
 
         // Читаем из БД
-        request.delete(app.config.backend.url + 'widgets/'+data.widget_uid+'/agents/'+data.agent.uid,
+        request.del(app.config.backend.url + 'widgets/'+data.widget_uid+'/agents/'+data.agent_uid,
             function (err, response, body) {
                 try {
-                    agent = JSON.parse(agent);
+                    body = JSON.parse(body);
+
                     // Сервер вернул ошибку
-                    if (agent && agent.errors) {
-                        console.log(agent.errors);
+                    if (body && body.errors) {
+                        console.log(body.errors);
                     } else {
                         // Оповещаем слушателей
                         app.publish('agent:removed', { agent_uid: data.agent_uid, widget_uid: data.widget_uid });
                     }
                 } catch(e) {
                     // Ошибка сервера
-                    console.log(agent);
+                    console.log(body);
                 }
             }
         );

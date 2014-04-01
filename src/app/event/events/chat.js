@@ -238,11 +238,13 @@ var self = module.exports = function (app)
                     if (body && body.errors) {
                         console.log(body.errors);
                     } else {
-                        // Удаляем данные о чате из Redis
-                        app.store.hdel('chats:' + data.widget_uid, data.chat_uid, function(e, r) {
-                            // Оповещаем слушателей об отключении чата
-                            app.publish('chat:disconnected', { chat_uid: data.chat_uid, widget_uid: data.widget_uid });
-                        });
+                        // // Удаляем данные о чате из Redis
+                        // app.store.hdel('chats:' + data.widget_uid, data.chat_uid, function(e, r) {
+                        //     // Оповещаем слушателей об отключении чата
+                        //     app.publish('chat:disconnected', { chat_uid: data.chat_uid, widget_uid: data.widget_uid });
+                        // });
+                        // Оповещаем слушателей об отключении чата
+                        app.publish('chat:disconnected', { chat_uid: data.chat_uid, widget_uid: data.widget_uid });
                     }
                 } catch(e) {
                     // Ошибка сервера
