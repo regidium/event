@@ -55,11 +55,19 @@ var self = module.exports = function (app)
     app.on('chat:connect', function (data) {
         console.log('Redis chat:connect');
 
+        // Если пользователь обновился находясь В чате, тогда не обновляем статус
+        if (data.chat.old_status == 2) {
+            var status = 'chatting';
+        } else {
+            var status = 'online';
+        }
+
         // Записываем в БД
-        request.put(app.config.backend.url + 'widgets/'+data.widget_uid+'/chats/'+data.chat.uid+'/online',
+        request.put(app.config.backend.url + 'widgets/'+data.widget_uid+'/chats/'+data.chat.uid+'/'+status,
             {},
             function (err, response, body) {
                 try {
+
                     body = JSON.parse(body);
                     // Сервер вернул ошибку
                     if (body && body.errors) {
@@ -82,11 +90,50 @@ var self = module.exports = function (app)
     });
 
     /**
+     * Чат отключился
+     *
+     * @param Object data {
+     *   string chat_uid   - UID чата
+     *   string widget_uid - UID виджета
+     * }
+     *
+     * @publish chat:disconnected
+     */
+    app.on('chat:disconnect', function (data) {
+        console.log('Redis chat:disconnect');
+
+        // Записываем в БД
+        request.put(app.config.backend.url + 'widgets/'+data.widget_uid+'/chats/'+data.chat_uid+'/offline',
+            {},
+            function (err, response, body) {
+                try {
+                    body = JSON.parse(body);
+                    // Сервер вернул ошибку
+                    if (body && body.errors) {
+                        console.log(body.errors);
+                    } else {
+                        // // Удаляем данные о чате из Redis
+                        // app.store.hdel('chats:' + data.widget_uid, data.chat_uid, function(e, r) {
+                        //     // Оповещаем слушателей об отключении чата
+                        //     app.publish('chat:disconnected', { chat_uid: data.chat_uid, widget_uid: data.widget_uid });
+                        // });
+                        // Оповещаем слушателей об отключении чата
+                        app.publish('chat:disconnected', { chat_uid: data.chat_uid, widget_uid: data.widget_uid });
+                    }
+                } catch(e) {
+                    // Ошибка сервера
+                    console.log(body);
+                }
+            }
+        );
+    });
+
+    /**
      * Агент подключися к чату
      *
      * @param Object data {
      *   Object agent      - данные агента
-     *   string chat_uid   - UID чата
+     *   string chat.uid   - данные чата
      *   string widget_uid - UID виджета
      * }
      *
@@ -98,14 +145,14 @@ var self = module.exports = function (app)
         console.log('Redis chat:agent:enter');
 
         // Записываем в БД
-        request.put(app.config.backend.url + 'agents/'+data.agent.uid+'/chats/'+data.chat_uid,
+        request.put(app.config.backend.url + 'widgets/'+data.widget_uid+'/chats/'+data.chat.uid+'/agents/'+data.agent.uid,
             {},
-            function (err, response, body) {
+            function (err, response, chat) {
                 try {
-                    body = JSON.parse(body);
+                    chat = JSON.parse(chat);
                     // Сервер вернул ошибку
-                    if (body && body.errors) {
-                        console.log(body.errors);
+                    if (chat && chat.errors) {
+                        console.log(chat.errors);
                     } else {
                         // Добавляем агента в чат в Redis
                         // app.store.hget('chats:' + data.widget_uid, data.chat_uid, function(e, r) {
@@ -120,11 +167,11 @@ var self = module.exports = function (app)
                         //     });
                         // });
                         // Оповещаем слушателей
-                        app.publish('chat:agent:entered', { chat: chat, agent: data.agent, widget_uid: data.widget_uid });
+                        app.publish('chat:agent:entered', { agent: data.agent, chat: chat, widget_uid: data.widget_uid });
                     }
                 } catch(e) {
                     // Ошибка сервера
-                    console.log(body);
+                    console.log(chat);
                 }
             }
         );
@@ -167,9 +214,9 @@ var self = module.exports = function (app)
                     // });
 
                     // Оповещаем о смене состония чата
-                    app.publish('chat:connected', { chat_uid: data.chat_uid, widget_uid: data.widget_uid });
+                    //app.publish('chat:connected', { chat_uid: data.chat_uid, widget_uid: data.widget_uid });
                     // Оповещаем слушателей о создании сообщения
-                    app.publish('chat:message:sended:user', { message_uid: chat_message.uid, chat_uid: data.chat_uid, widget_uid: data.widget_uid });
+                    app.publish('chat:message:sended:user', { message: chat_message, chat_uid: data.chat_uid, widget_uid: data.widget_uid });
                 }
             } catch(e) {
                 // Ошибка сервера
@@ -182,6 +229,7 @@ var self = module.exports = function (app)
      * Агент отправил сообщение
      *
      * @param Object data {
+     *   Object message    - данные сообщения
      *   string chat_uid   - UID чата
      *   string widget_uid - UID виджета
      * }
@@ -213,45 +261,6 @@ var self = module.exports = function (app)
                     console.log(chat_message);
                 }
         });
-    });
-
-    /**
-     * Чат отключился
-     *
-     * @param Object data {
-     *   string chat_uid   - UID чата
-     *   string widget_uid - UID виджета
-     * }
-     *
-     * @publish chat:disconnected
-     */
-    app.on('chat:disconnect', function (data) {
-        console.log('Redis chat:disconnect');
-
-        // Записываем в БД
-        request.put(app.config.backend.url + 'widgets/'+data.widget_uid+'/chats/'+data.chat_uid+'/offline',
-            {},
-            function (err, response, body) {
-                try {
-                    body = JSON.parse(body);
-                    // Сервер вернул ошибку
-                    if (body && body.errors) {
-                        console.log(body.errors);
-                    } else {
-                        // // Удаляем данные о чате из Redis
-                        // app.store.hdel('chats:' + data.widget_uid, data.chat_uid, function(e, r) {
-                        //     // Оповещаем слушателей об отключении чата
-                        //     app.publish('chat:disconnected', { chat_uid: data.chat_uid, widget_uid: data.widget_uid });
-                        // });
-                        // Оповещаем слушателей об отключении чата
-                        app.publish('chat:disconnected', { chat_uid: data.chat_uid, widget_uid: data.widget_uid });
-                    }
-                } catch(e) {
-                    // Ошибка сервера
-                    console.log(body);
-                }
-            }
-        );
     });
 
     /**
@@ -317,7 +326,7 @@ var self = module.exports = function (app)
                         console.log(chats.errors);
                     } else {
                         // Оповещаем слушателей
-                        app.publish('chat:online:list', chats);
+                        app.publish('chat:online:list', { chats: chats });
                     }
                 } catch(e) {
                     // Ошибка сервера
@@ -377,7 +386,7 @@ var self = module.exports = function (app)
      */
     app.on('chat:user:auth', function (data) {
         console.log('Redis chat:user:auth');
-console.log(data.user);
+
         // Записываем в БД
         request.put(app.config.backend.url + 'widgets/'+data.widget_uid+'/chats/'+data.chat_uid+'/auth', {
                 form: data.user,
