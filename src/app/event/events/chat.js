@@ -6,8 +6,9 @@ var self = module.exports = function (app)
      * Создание чата
      *
      * @param Object data {
-     *   string widget_uid - UID виджета
      *   Object chat       - информация о пользователе
+     *   string widget_uid - UID виджета
+     *   string socket_id  - ID сокета
      * }
      *
      * @store hset chats:(Widget UID) (Chat UID)
@@ -17,6 +18,9 @@ var self = module.exports = function (app)
      */
     app.on('chat:create', function (data) {
         console.log('Redis chat:create');
+
+        // Добавляем Socket Id к данным чата
+        data.chat.socket_id = data.socket_id;
 
         // Создаем пользователя в БД
         request.post(app.config.backend.url + 'widgets/'+data.widget_uid+'/chats', {
@@ -29,12 +33,16 @@ var self = module.exports = function (app)
                     console.log(chat.errors);
                 } else {
                     // Записываем данные чата и пользователя в Redis
-                    app.store.hset('chats:' + data.widget_uid, chat.uid, JSON.stringify({ chat: chat }), function(e, r) {
-                        // Оповещаем слушателей о создании чата
-                        app.publish('chat:created', { chat: chat, widget_uid: data.widget_uid, socket_id: data.socket_id });
-                        // Оповещаем слушателей о подключении чата
-                        app.publish('chat:connected', { chat: chat, widget_uid: data.widget_uid });
-                    });
+                    // app.store.hset('chats:' + data.widget_uid, chat.uid, JSON.stringify({ chat: chat }), function(e, r) {
+                    //     // Оповещаем слушателей о создании чата
+                    //     app.publish('chat:created', { chat: chat, widget_uid: data.widget_uid, socket_id: data.socket_id });
+                    //     // Оповещаем слушателей о подключении чата
+                    //     app.publish('chat:connected', { chat: chat, widget_uid: data.widget_uid });
+                    // });
+                    // Оповещаем слушателей о создании чата
+                    app.publish('chat:created', { chat: chat, widget_uid: data.widget_uid, socket_id: data.socket_id });
+                    // Оповещаем слушателей о подключении чата
+                    app.publish('chat:connected', { chat: chat, widget_uid: data.widget_uid });
                 }
             } catch(e) {
                 console.log(chat);
@@ -48,6 +56,7 @@ var self = module.exports = function (app)
      * @param Object data {
      *   string chat       - данные чата
      *   string widget_uid - UID виджета
+     *   string socket_id  - ID сокета
      * }
      *
      * @publish chat:connected
@@ -63,11 +72,10 @@ var self = module.exports = function (app)
         }
 
         // Записываем в БД
-        request.put(app.config.backend.url + 'widgets/'+data.widget_uid+'/chats/'+data.chat.uid+'/'+status,
-            {},
-            function (err, response, body) {
+        request.put(app.config.backend.url + 'widgets/'+data.widget_uid+'/chats/'+data.chat.uid+'/'+status, {
+                form: { socket_id: data.socket_id }
+            }, function (err, response, body) {
                 try {
-
                     body = JSON.parse(body);
                     // Сервер вернул ошибку
                     if (body && body.errors) {

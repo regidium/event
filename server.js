@@ -14,10 +14,10 @@ self.initialize = function ()
     self.sub = redis.createClient();
     self.pub = redis.createClient();
     self.sub.subscribe(config.redis.io_in);
-    self.sub.on('message', function (chanel, event) {
-        event = JSON.parse(event);
-        self.handle_event(chanel, event);
-    });
+     self.sub.on('message', function (chanel, event) {
+         event = JSON.parse(event);
+         self.handle_event(chanel, event);
+     });
     console.log('Subscribed on sending successfully in chanel ' + config.redis.io_in);
 
     // Events
