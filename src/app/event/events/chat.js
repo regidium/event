@@ -202,7 +202,7 @@ var self = module.exports = function (app)
         console.log('Redis chat:message:send:user');
 
         // Записываем в БД
-        request.post(app.config.backend.url + 'widgets/'+data.widget_uid+'/chats/'+data.chat_uid+'/messages', {
+        request.post(app.config.backend.url + 'widgets/'+data.widget_uid+'/chats/'+data.chat.uid+'/messages', {
             form: data.message
         }, function (err, response, chat_message) {
             try {
@@ -214,17 +214,23 @@ var self = module.exports = function (app)
                     console.log(chat_message.message);
                 } else {
                     // Записываем данные сообщения в Redis
-                    // app.store.hmset('messages:' + data.chat_uid + ':' + data.chat_uid, chat_message.uid, JSON.stringify({ chat_uid: chat_message.uid, person: data.person, widget_uid: data.widget_uid, chat_uid: data.chat_uid, date: data.date, text: data.text }), function(e, r) {
+                    // app.store.hmset('messages:' + data.chat.uid + ':' + data.chat.uid, chat_message.uid, JSON.stringify({ message: chat_message.uid, person: data.person, widget_uid: data.widget_uid, chat.uid: data.chat.uid, date: data.date, text: data.text }), function(e, r) {
                     //     // Оповещаем о смене состония чата
                     //     app.publish('chat:connected', { person: person, chat: chat, widget_uid: data.widget_uid });
                     //     // Оповещаем слушателей о создании сообщения
-                    //     app.publish('chat:message:sended:user', { chat_uid: chat_message.uid, person: data.person, widget_uid: data.widget_uid, chat_uid: data.chat_uid, date: data.date, text: data.text });
+                    //     app.publish('chat:message:sended:user', { message: chat_message.uid, person: data.person, widget_uid: data.widget_uid, chat_uid: data.chat.uid, date: data.date, text: data.text });
                     // });
 
                     // Оповещаем о смене состония чата
-                    //app.publish('chat:connected', { chat_uid: data.chat_uid, widget_uid: data.widget_uid });
+                    //app.publish('chat:connected', { chat_uid: data.chat.uid, widget_uid: data.widget_uid });
                     // Оповещаем слушателей о создании сообщения
-                    app.publish('chat:message:sended:user', { message: chat_message, chat_uid: data.chat_uid, widget_uid: data.widget_uid });
+                    app.publish('chat:message:sended:user', { message: chat_message, chat_uid: data.chat.uid, widget_uid: data.widget_uid });
+                    
+                    // Проверяем статус чата
+                    if (data.chat.status != 2) {
+                        // Оповещаем слушателей о смене статуса чата
+                        app.publish('chat:connected', { chat: data.chat, widget_uid: data.widget_uid });
+                    }
                 }
             } catch(e) {
                 // Ошибка сервера
