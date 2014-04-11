@@ -228,6 +228,8 @@ var self = module.exports = function (app)
                     
                     // Проверяем статус чата
                     if (data.chat.status != 2) {
+                        // Устананавливаем статус чата "В чате"
+                        data.chat.status = 2;
                         // Оповещаем слушателей о смене статуса чата
                         app.publish('chat:connected', { chat: data.chat, widget_uid: data.widget_uid });
                     }

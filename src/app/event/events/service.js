@@ -10,7 +10,7 @@ var self = module.exports = function (app)
      * Отключение повисших пользователей (после перезагрузки)
      *
      * @param Object data {
-     *   array socket_ids - Массив ID активных сокетов
+     *   array chats_uids - Массив UID активных чатов
      * }
      *
      * @todo Использовать Redis
@@ -22,7 +22,7 @@ var self = module.exports = function (app)
 
         // Создаем пользователя в БД
         request.put(app.config.backend.url + 'service/disconnect/users', {
-            form: { socket_ids: data.socket_ids }
+            form: { chats_uids: data.chats_uids }
         }, function (err, response, body) {
             try {
                 body = JSON.parse(body);
