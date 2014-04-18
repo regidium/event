@@ -283,7 +283,7 @@ var self = module.exports = function (app)
      * Запрос существующих чатов
      *
      * @param Object data {
-     *   string chat_uid   - UID чата
+     *   string agent_uid  - UID агента
      *   string widget_uid - UID виджета
      * }
      *
@@ -295,7 +295,7 @@ var self = module.exports = function (app)
         console.log('Redis chat:existed');
 
         // Читаем из БД
-        request.get(app.config.backend.url + 'widgets/'+data.widget_uid+'/chats/existed',
+        request.get(app.config.backend.url + 'widgets/'+data.widget_uid+'/chats/'+data.agent_uid+'/existed',
             {},
             function (err, response, body) {
                 try {
