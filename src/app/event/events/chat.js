@@ -174,6 +174,7 @@ var self = module.exports = function (app)
                         //         app.publish('chat:agent:entered', { chat: chat, person: data.person, widget_uid: data.widget_uid });
                         //     });
                         // });
+
                         // Оповещаем слушателей
                         app.publish('chat:agent:entered', { agent: data.agent, chat: chat, widget_uid: data.widget_uid });
                     }
@@ -210,8 +211,6 @@ var self = module.exports = function (app)
                 // Сервер вернул ошибку
                 if (chat_message && chat_message.errors) {
                     console.log(chat_message.errors);
-                } else if (chat_message && chat_message.message) {
-                    console.log(chat_message.message);
                 } else {
                     // Записываем данные сообщения в Redis
                     // app.store.hmset('messages:' + data.chat.uid + ':' + data.chat.uid, chat_message.uid, JSON.stringify({ message: chat_message.uid, person: data.person, widget_uid: data.widget_uid, chat.uid: data.chat.uid, date: data.date, text: data.text }), function(e, r) {
@@ -221,8 +220,6 @@ var self = module.exports = function (app)
                     //     app.publish('chat:message:sended:user', { message: chat_message.uid, person: data.person, widget_uid: data.widget_uid, chat_uid: data.chat.uid, date: data.date, text: data.text });
                     // });
 
-                    // Оповещаем о смене состония чата
-                    //app.publish('chat:connected', { chat_uid: data.chat.uid, widget_uid: data.widget_uid });
                     // Оповещаем слушателей о создании сообщения
                     app.publish('chat:message:sended:user', { message: chat_message, chat_uid: data.chat.uid, widget_uid: data.widget_uid });
                     
@@ -270,7 +267,7 @@ var self = module.exports = function (app)
                             // Оповещаем слушателей о создании сообщения
                             //app.publish('chat:message:sended:agent', { uid: chat_message.uid, person: data.person, widget_uid: data.widget_uid, chat_uid: data.chat_uid, date: data.date, text: data.text });
                         //});
-                        app.publish('chat:message:sended:agent', { message_uid: chat_message.uid, chat_uid: data.chat_uid, widget_uid: data.widget_uid });
+                        app.publish('chat:message:sended:agent', { message: chat_message, chat_uid: data.chat_uid, widget_uid: data.widget_uid });
                     }
                 } catch(e) {
                     // Ошибка сервера
@@ -393,7 +390,7 @@ var self = module.exports = function (app)
      *
      * @param Object data {
      *   Object user       - данные пользователя
-     *   Object chat_uid   - UID чата
+     *   string chat_uid   - UID чата
      *   string widget_uid - UID виджета
      *   string socket_id  - ID сокета
      * }
@@ -405,7 +402,7 @@ var self = module.exports = function (app)
 
         // Записываем в БД
         request.put(app.config.backend.url + 'widgets/'+data.widget_uid+'/chats/'+data.chat_uid+'/auth', {
-                form: data.user,
+                form: data.user
             }, function (err, response, body) {
                 try {
                     body = JSON.parse(body);
@@ -419,6 +416,69 @@ var self = module.exports = function (app)
                 } catch(e) {
                     // Ошибка сервера
                     console.log(body);
+                }
+            }
+        );
+    });
+
+    /**
+     * Сообщение было прочитано
+     *
+     * @param Object data {
+     *   string message_uid - UID сообщения
+     *   string chat_uid   - UID чата
+     *   string widget_uid - UID виджета
+     * }
+     */
+    app.on('chat:message:readed', function (data) {
+        console.log('Redis chat:message:readed');
+console.log(data);
+        // Записываем в БД
+        request.put(app.config.backend.url + 'widgets/'+data.widget_uid+'/chats/'+data.chat_uid+'/messages/'+data.message_uid+'/read', {
+            }, function (err, response, body) {
+                try {
+                    body = JSON.parse(body);
+                    // Сервер вернул ошибку
+                    if (body && body.errors) {
+                        console.log(body.errors);
+                    } else {
+                        // @todo
+                    }
+                } catch(e) {
+                    // Ошибка сервера
+                    console.log(body);
+                }
+            }
+        );
+    });
+
+    /**
+     * Запрос списока непрочитанных сообщений
+     *
+     * @param Object data {
+     *   string message_uid - UID сообщения
+     *   string chat_uid   - UID чата
+     *   string widget_uid - UID виджета
+     * }
+     */
+    app.on('chat:message:new:get', function (data) {
+        console.log('Redis chat:message:new:get');
+
+        // Записываем в БД
+        request.get(app.config.backend.url + 'widgets/'+data.widget_uid+'/messages/new', {
+            }, function (err, response, messages) {
+                try {
+                    messages = JSON.parse(messages);
+                    // Сервер вернул ошибку
+                    if (messages && messages.errors) {
+                        console.log(messages.errors);
+                    } else {
+                        // Оповещаем слушателей об авторизации пользователя
+                        app.publish('chat:message:new:list', { new_messages: messages, widget_uid: data.widget_uid });
+                    }
+                } catch(e) {
+                    // Ошибка сервера
+                    console.log(messages);
                 }
             }
         );
