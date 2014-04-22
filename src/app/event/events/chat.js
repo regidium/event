@@ -379,7 +379,9 @@ var self = module.exports = function (app)
                     }
                 } catch(e) {
                     // Ошибка сервера
+                    console.log('========= chat:archives =======');
                     console.log(body);
+                    console.log('===============================');
                 }
             }
         );
@@ -478,7 +480,9 @@ console.log(data);
                     }
                 } catch(e) {
                     // Ошибка сервера
+                    console.log('========= chat:message:new:get =======');
                     console.log(messages);
+                    console.log('=======================================');
                 }
             }
         );

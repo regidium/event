@@ -48,25 +48,28 @@ var self = module.exports = function (app)
     app.on('agent:connect', function (data) {
         console.log('Redis agent:connect');
 
-        // Создаем пользователя в БД
-        request.post(app.config.backend.url + 'widgets/'+data.widget_uid+'/agents/'+data.agent.uid+'/auths', {}, function (err, response, body) {
-            try {
-                body = JSON.parse(body);
-                // Сервер вернул ошибку
-                if (body && body.errors) {
-                    console.log(body.errors);
-                } else {
-                    // Записываем данные агента в Redis
-                    // app.store.hset('agents:' + data.widget_uid, data.agent.uid, JSON.stringify({ agent: data.agent }), function(e, r) {
-                    //     // Оповещаем слушателей о подключени агента
-                    //     app.publish('agent:connected', { agent: data.agent, widget_uid: data.widget_uid });
-                    // });
-                    // Оповещаем слушателей о подключени агента
-                    app.publish('agent:connected', { agent: data.agent, widget_uid: data.widget_uid });
+        // Записываем в БД
+        request.post(app.config.backend.url + 'widgets/'+data.widget_uid+'/agents/'+data.agent.uid+'/auths',
+            {}, function (err, response, body) {
+                try {
+                    body = JSON.parse(body);
+                    // Сервер вернул ошибку
+                    if (body && body.errors) {
+                        console.log(body.errors);
+                    } else {
+                        // Записываем данные агента в Redis
+                        // app.store.hset('agents:' + data.widget_uid, data.agent.uid, JSON.stringify({ agent: data.agent }), function(e, r) {
+                        //     // Оповещаем слушателей о подключени агента
+                        //     app.publish('agent:connected', { agent: data.agent, widget_uid: data.widget_uid });
+                        // });
+                        // Оповещаем слушателей о подключени агента
+                        app.publish('agent:connected', { agent: data.agent, widget_uid: data.widget_uid });
+                    }
+                } catch(e) {
+                    console.log('========= agent:connect =======');
+                    console.log(body);
+                    console.log('===============================');
                 }
-            } catch(e) {
-                console.log(body);
-            }
         });
     });
 
