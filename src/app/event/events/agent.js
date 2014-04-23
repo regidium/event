@@ -136,7 +136,7 @@ var self = module.exports = function (app)
     app.on('agent:remove', function (data) {
         console.log('Redis agent:remove');
 
-        // Читаем из БД
+        // Удаляем из БД
         request.del(app.config.backend.url + 'widgets/'+data.widget_uid+'/agents/'+data.agent_uid,
             function (err, response, body) {
                 try {
