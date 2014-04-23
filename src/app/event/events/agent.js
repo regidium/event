@@ -66,9 +66,7 @@ var self = module.exports = function (app)
                         app.publish('agent:connected', { agent: data.agent, widget_uid: data.widget_uid });
                     }
                 } catch(e) {
-                    console.log('========= agent:connect =======');
                     console.log(body);
-                    console.log('===============================');
                 }
         });
     });

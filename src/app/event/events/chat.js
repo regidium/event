@@ -187,6 +187,42 @@ var self = module.exports = function (app)
     });
 
     /**
+     * Агент отключился от чата
+     *
+     * @param Object data {
+     *   Object agent      - данные агента
+     *   string chat_uid   - UID чата
+     *   string widget_uid - UID виджета
+     * }
+     *
+     * @request DELETE agent/:widget_uid/chats/:chat_uid/agents/:agent_uid
+     *
+     * @publish chat:agent:leaved
+     */
+    app.on('chat:agent:leave', function (data) {
+        console.log('Redis chat:agent:leave');
+
+        // Записываем в БД
+        request.del(app.config.backend.url + 'widgets/'+data.widget_uid+'/chats/'+data.chat_uid+'/agents/'+data.agent.uid,
+            function (err, response, body) {
+                try {
+                    body = JSON.parse(body);
+                    // Сервер вернул ошибку
+                    if (body && body.errors) {
+                        console.log(body.errors);
+                    } else {
+                        // Оповещаем слушателей
+                        app.publish('chat:agent:leaved', { agent: data.agent, chat: data.chat_uid, widget_uid: data.widget_uid });
+                    }
+                } catch(e) {
+                    // Ошибка сервера
+                    console.log(body);
+                }
+            }
+        );
+    });
+
+    /**
      * Пользователь отправил сообщение
      *
      * @param Object data {
