@@ -88,7 +88,7 @@ var self = module.exports = function (app)
         console.log('Redis widget:setting:triggers:edit');
 
         // Сохраняем триггер виджета в БД
-        request.put(app.config.backend.url + 'widgets/'+data.widget_uid+'/triggers/'+data.trigger_uid, {
+        request.put(app.config.backend.url + 'widgets/'+data.widget_uid+'/triggers/'+data.trigger.uid, {
                 form: { trigger: data.trigger }
             }, function (err, response, trigger) {
             try {
