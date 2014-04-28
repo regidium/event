@@ -19,9 +19,6 @@ var self = module.exports = function (app)
     app.on('chat:create', function (data) {
         console.log('Redis chat:create');
 
-        // Добавляем Socket Id к данным чата
-        data.chat.socket_id = data.socket_id;
-
         // Создаем пользователя в БД
         request.post(app.config.backend.url + 'widgets/'+data.widget_uid+'/chats', {
             form: data.chat
@@ -31,6 +28,8 @@ var self = module.exports = function (app)
                 // Сервер вернул ошибку
                 if (chat && chat.errors) {
                     console.log(chat.errors);
+                } else if (chat && chat.error) {
+                    console.log(chat.error);
                 } else {
                     // Записываем данные чата и пользователя в Redis
                     // app.store.hset('chats:' + data.widget_uid, chat.uid, JSON.stringify({ chat: chat }), function(e, r) {
@@ -72,9 +71,7 @@ var self = module.exports = function (app)
         }
 
         // Записываем в БД
-        request.put(app.config.backend.url + 'widgets/'+data.widget_uid+'/chats/'+data.chat.uid+'/'+status, {
-                form: { socket_id: data.socket_id }
-            }, function (err, response, body) {
+        request.put(app.config.backend.url + 'widgets/'+data.widget_uid+'/chats/'+data.chat.uid+'/'+status, {}, function (err, response, body) {
                 try {
                     body = JSON.parse(body);
                     // Сервер вернул ошибку
@@ -145,7 +142,7 @@ var self = module.exports = function (app)
      *   string widget_uid - UID виджета
      * }
      *
-     * @request PUT agent/(Widget UID)/chats/(Chat UID)
+     * @request PUT agent/:widget_uid/chats/:chat_uid
      *
      * @publish chat:agent:entered
      */
@@ -415,9 +412,7 @@ var self = module.exports = function (app)
                     }
                 } catch(e) {
                     // Ошибка сервера
-                    console.log('========= chat:archives =======');
                     console.log(body);
-                    console.log('===============================');
                 }
             }
         );
@@ -470,7 +465,7 @@ var self = module.exports = function (app)
      */
     app.on('chat:message:readed', function (data) {
         console.log('Redis chat:message:readed');
-console.log(data);
+
         // Записываем в БД
         request.put(app.config.backend.url + 'widgets/'+data.widget_uid+'/chats/'+data.chat_uid+'/messages/'+data.message_uid+'/read', {
             }, function (err, response, body) {
@@ -491,34 +486,34 @@ console.log(data);
     });
 
     /**
-     * Запрос списока непрочитанных сообщений
+     * Изменена текущая страница чата
      *
      * @param Object data {
-     *   string message_uid - UID сообщения
+     *   string new_url    - текущий URL чата
      *   string chat_uid   - UID чата
      *   string widget_uid - UID виджета
      * }
      */
-    app.on('chat:message:new:get', function (data) {
-        console.log('Redis chat:message:new:get');
+    app.on('chat:url:change', function (data) {
+        console.log('Redis chat:url:change');
 
         // Записываем в БД
-        request.get(app.config.backend.url + 'widgets/'+data.widget_uid+'/messages/new', {
-            }, function (err, response, messages) {
+        request.patch(app.config.backend.url + 'widgets/'+data.widget_uid+'/chats/'+data.chat_uid+'/url', {
+            form: { current_url: encodeURIComponent(data.new_url) }
+        }, function (err, response, body) {
                 try {
-                    messages = JSON.parse(messages);
+                    body = JSON.parse(body);
                     // Сервер вернул ошибку
-                    if (messages && messages.errors) {
-                        console.log(messages.errors);
+                    if (body && body.errors) {
+                        console.log(body.errors);
+                    } else if (body && body.error) {
+                        console.log(body.error);
                     } else {
-                        // Оповещаем слушателей об авторизации пользователя
-                        app.publish('chat:message:new:list', { new_messages: messages, widget_uid: data.widget_uid });
+                        app.publish('chat:url:changed', { new_url: data.new_url, chat_uid: data.chat_uid, widget_uid: data.widget_uid });
                     }
                 } catch(e) {
                     // Ошибка сервера
-                    console.log('========= chat:message:new:get =======');
-                    console.log(messages);
-                    console.log('=======================================');
+                    console.log(body);
                 }
             }
         );

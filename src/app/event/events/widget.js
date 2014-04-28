@@ -144,4 +144,100 @@ var self = module.exports = function (app)
         });
     });
 
+    /**
+     * Запрос списка непрочитанных сообщений виджета
+     *
+     * @param Object data {
+     *   string widget_uid - UID виджета
+     * }
+     */
+    app.on('widget:message:new:get', function (data) {
+        console.log('Redis widget:message:new:get');
+
+        // Записываем в БД
+        request.get(app.config.backend.url + 'widgets/'+data.widget_uid+'/messages/new', {
+            }, function (err, response, messages) {
+                try {
+                    messages = JSON.parse(messages);
+                    // Сервер вернул ошибку
+                    if (messages && messages.errors) {
+                        console.log(messages.errors);
+                    } else {
+                        // Оповещаем слушателей об авторизации пользователя
+                        app.publish('widget:message:new:list', { new_messages: messages, widget_uid: data.widget_uid });
+                    }
+                } catch(e) {
+                    // Ошибка сервера
+                    console.log(messages);
+                }
+            }
+        );
+    });
+
+    /**
+     * Оплата услуг виджета
+     *
+     * @param Object data {
+     *   Object pay        - метод оплаты
+     *   string widget_uid - UID виджета
+     * }
+     *
+     * @todo Использовать Redis
+     *
+     * @publish widget:payment:madet
+     */
+    app.on('widget:payment:made', function (data) {
+        console.log('Redis widget:payment:made');
+
+        // Сохраняем триггер виджета в БД
+        request.put(app.config.backend.url + 'widgets/'+data.widget_uid+'/triggers/'+data.trigger.uid, {
+                form: data.pay
+            }, function (err, response, payment) {
+            try {
+                payment = JSON.parse(payment);
+                // Сервер вернул ошибку
+                if (payment && payment.errors) {
+                    console.log(payment.errors);
+                } else {
+                    app.publish('widget:payment:madet', { payment: payment, widget_uid: data.widget_uid });
+                }
+            } catch(e) {
+                console.log(payment);
+            }
+        });
+    });
+
+    /**
+     * Смена тарифного плана виджета
+     *
+     * @param Object data {
+     *   Object pay        - метод оплаты
+     *   string widget_uid - UID виджета
+     * }
+     *
+     * @todo Использовать Redis
+     *
+     * @publish widget:plan:changed
+     */
+    app.on('widget:plan:change', function (data) {
+        console.log('Redis widget:plan:change');
+
+        // Сохраняем триггер виджета в БД
+        request.put(app.config.backend.url + 'widgets/'+data.widget_uid+'/triggers/'+data.trigger.uid, {
+                form: { plan: data.plan }
+            }, function (err, response, body) {
+            try {
+                body = JSON.parse(body);
+                // Сервер вернул ошибку
+                if (body && body.errors) {
+                    console.log(body.errors);
+                } else {
+                    app.publish('widget:plan:changed', { widget_uid: data.widget_uid });
+                }
+            } catch(e) {
+                console.log(body);
+            }
+        });
+    });
+
 };
