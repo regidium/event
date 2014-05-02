@@ -372,7 +372,7 @@ var self = module.exports = function (app)
                         console.log(chats.errors);
                     } else {
                         // Оповещаем слушателей
-                        app.publish('chat:online:list', { chats: chats });
+                        app.publish('chat:online:list', { chats: chats, widget_uid: data.widget_uid });
                     }
                 } catch(e) {
                     // Ошибка сервера
@@ -407,6 +407,7 @@ var self = module.exports = function (app)
                     if (body && body.errors) {
                         console.log(body.errors);
                     } else {
+                        //body.widget_uid = data.widget_uid;
                         // Оповещаем слушателей
                         app.publish('chat:archives:list', body);
                     }
