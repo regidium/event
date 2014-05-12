@@ -49,7 +49,7 @@ var self = module.exports = function (app)
         console.log('Redis agent:connect');
 
         // Записываем в БД
-        request.post(app.config.backend.url + 'widgets/'+data.widget_uid+'/agents/'+data.agent.uid+'/auths',
+        request.put(app.config.backend.url + 'widgets/'+data.widget_uid+'/agents/'+data.agent.uid+'/online',
             {}, function (err, response, body) {
                 try {
                     body = JSON.parse(body);
@@ -82,13 +82,27 @@ var self = module.exports = function (app)
     app.on('agent:disconnect', function (data) {
         console.log('Redis agent:disconnect');
 
-        // Удаляем данные о агента из Redis
-        // app.store.hdel('agents:' + data.widget_uid, data.agent_uid, function(e, r) {
-        //     // Оповещаем слушателей об отключении агента
-        //     app.publish('agent:disconnected', { agent_uid: data.agent_uid, widget_uid: data.widget_uid });
-        // });
-        // Оповещаем слушателей об отключении агента
-        app.publish('agent:disconnected', { agent_uid: data.agent_uid, widget_uid: data.widget_uid });
+        // Записываем в БД
+        request.put(app.config.backend.url + 'widgets/'+data.widget_uid+'/agents/'+data.agent_uid+'/offline',
+            {}, function (err, response, body) {
+                try {
+                    body = JSON.parse(body);
+                    // Сервер вернул ошибку
+                    if (body && body.errors) {
+                        console.log(body.errors);
+                    } else {
+                        // Удаляем данные о агента из Redis
+                        // app.store.hdel('agents:' + data.widget_uid, data.agent_uid, function(e, r) {
+                        //     // Оповещаем слушателей об отключении агента
+                        //     app.publish('agent:disconnected', { agent_uid: data.agent_uid, widget_uid: data.widget_uid });
+                        // });
+                        // Оповещаем слушателей об отключении агента
+                        app.publish('agent:disconnected', { agent_uid: data.agent_uid, widget_uid: data.widget_uid });
+                    }
+                } catch(e) {
+                    console.log(body);
+                }
+        });
     });
 
     /**

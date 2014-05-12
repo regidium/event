@@ -134,6 +134,40 @@ var self = module.exports = function (app)
     });
 
     /**
+     * Чат закрыт
+     *
+     * @param Object data {
+     *   string chat_uid   - UID чата
+     *   string widget_uid - UID виджета
+     * }
+     *
+     * @publish chat:closed
+     */
+    app.on('chat:close', function (data) {
+        console.log('Redis chat:close');
+
+        // Записываем в БД
+        request.put(app.config.backend.url + 'widgets/'+data.widget_uid+'/chats/'+data.chat_uid+'/closed',
+            {},
+            function (err, response, body) {
+                try {
+                    body = JSON.parse(body);
+                    // Сервер вернул ошибку
+                    if (body && body.errors) {
+                        console.log(body.errors);
+                    } else {
+                        // Оповещаем слушателей об закрытии чата
+                        app.publish('chat:closed', { chat_uid: data.chat_uid, widget_uid: data.widget_uid });
+                    }
+                } catch(e) {
+                    // Ошибка сервера
+                    console.log(body);
+                }
+            }
+        );
+    });
+
+    /**
      * Агент подключися к чату
      *
      * @param Object data {
@@ -255,7 +289,7 @@ var self = module.exports = function (app)
 
                     // Оповещаем слушателей о создании сообщения
                     app.publish('chat:message:sended:user', { message: chat_message, chat_uid: data.chat.uid, widget_uid: data.widget_uid });
-                    
+
                     // Проверяем статус чата
                     if (data.chat.status != 2) {
                         // Устананавливаем статус чата "В чате"

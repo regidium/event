@@ -1,5 +1,5 @@
-set :application,           "my.regidium.com"
-set :domain,                "event.regidium.com"
+set :application,           "event.regidium.com"
+set :domain,                "my.regidium.com"
 set :deploy_to,             "/www/regidium.com/event"
  
 set :scm,                   :git
