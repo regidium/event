@@ -38,6 +38,7 @@ var self = module.exports = function (app)
      *
      * @param Object data {
      *   Object agent      - данные агента,
+     *   Object sesssion   - данные сессии,
      *   string widget_uid - UID виджета
      * }
      *
@@ -50,7 +51,7 @@ var self = module.exports = function (app)
 
         // Записываем в БД
         request.put(app.config.backend.url + 'widgets/'+data.widget_uid+'/agents/'+data.agent.uid+'/online',
-            {}, function (err, response, body) {
+            { form: data.session }, function (err, response, body) {
                 try {
                     body = JSON.parse(body);
                     // Сервер вернул ошибку
