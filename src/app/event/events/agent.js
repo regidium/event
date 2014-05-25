@@ -170,4 +170,35 @@ var self = module.exports = function (app)
         );
     });
 
+    /**
+     * Агент написал предложение
+     *
+     * @param Object data {
+     *   Object issue  - предложение
+     *   string agent_uid - UID агента
+     * }
+     */
+    app.on('agent:issue:send', function (data) {
+        console.log('Redis agent:issue:send');
+
+        // Записываем в БД
+        request.post(app.config.backend.url + 'mails/'+data.agent_uid+'/issues', {
+            form: data.issue
+        }, function (err, response, body) {
+                try {
+                    body = JSON.parse(body);
+                    // Сервер вернул ошибку
+                    if (body && body.errors) {
+                        console.log(body.errors);
+                    } else {
+                        // @todo
+                    }
+                } catch(e) {
+                    // Ошибка сервера
+                    console.log(body);
+                }
+            }
+        );
+    });
+
 };

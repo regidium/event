@@ -1,27 +1,26 @@
 set :application,           "event.regidium.com"
 set :domain,                "my.regidium.com"
-set :deploy_to,             "/www/regidium.com/event"
- 
+set :deploy_to,             "/var/www/regidium.com/event"
+
 set :scm,                   :git
 set :repository,            "git@github.com:regidium/event.git"
 set :branch,                "master"
 set :deploy_via,            :remote_cache
 
 role :app,                  domain, :primary => true
- 
+
 default_run_options[:pty] = true
+ssh_options[:forward_agent] = true
 
 set :keep_releases,         3
-set :ssh_options,           {:forward_agent => true, :port => 22}
-set :user,                  "USER"
-set :scm_passphrase,        "PASSWORD"
+set :user,                  "deployer"
+set :scm_passphrase,        "XXX"
 set :use_sudo,              false
 set :normalize_asset_timestamps, false
 
 set :shared_children,       [
                                 "node_modules",
-                                "config/config",
-                                "public/js/app/common/config"
+                                "config/config"
                             ]
 
 namespace :deploy do
