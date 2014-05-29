@@ -126,6 +126,8 @@ var self = module.exports = function (app)
                     // Сервер вернул ошибку
                     if (agent && agent.errors) {
                         console.log(agent.errors);
+                    } else if (agent && agent.messages) {
+                        console.log(agent.errors);
                     } else {
                         // Оповещаем слушателей
                         app.publish('agent:saved', { agent: agent, widget_uid: data.widget_uid });

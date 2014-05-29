@@ -178,31 +178,31 @@ var self = module.exports = function (app)
      * Оплата услуг виджета
      *
      * @param Object data {
-     *   Object pay        - метод оплаты
+     *   Object payment    - метод оплаты
      *   string widget_uid - UID виджета
      * }
      *
      * @todo Использовать Redis
      *
-     * @publish widget:payment:madet
+     * @publish widget:payment:transaction
      */
     app.on('widget:payment:made', function (data) {
-        console.log('Redis widget:payment:made');
+        console.log('Redis widget:payment:made', data);
 
         // Сохраняем триггер виджета в БД
-        request.put(app.config.backend.url + 'widgets/'+data.widget_uid+'/triggers/'+data.trigger.uid, {
-                form: data.pay
-            }, function (err, response, payment) {
+        request.post(app.config.backend.url + 'widgets/'+data.widget_uid+'/transactions', {
+                form: { payment: data.payment }
+            }, function (err, response, transaction) {
             try {
-                payment = JSON.parse(payment);
+                transaction = JSON.parse(transaction);
                 // Сервер вернул ошибку
-                if (payment && payment.errors) {
-                    console.log(payment.errors);
+                if (transaction && transaction.errors) {
+                    console.log(transaction.errors);
                 } else {
-                    app.publish('widget:payment:madet', { payment: payment, widget_uid: data.widget_uid });
+                    app.publish('widget:payment:transaction', { transaction: transaction, widget_uid: data.widget_uid });
                 }
             } catch(e) {
-                console.log(payment);
+                console.log(transaction);
             }
         });
     });
@@ -211,7 +211,7 @@ var self = module.exports = function (app)
      * Смена тарифного плана виджета
      *
      * @param Object data {
-     *   Object pay        - метод оплаты
+     *   Object payment    - метод оплаты
      *   string widget_uid - UID виджета
      * }
      *
@@ -223,7 +223,7 @@ var self = module.exports = function (app)
         console.log('Redis widget:plan:change');
 
         // Сохраняем триггер виджета в БД
-        request.put(app.config.backend.url + 'widgets/'+data.widget_uid+'/triggers/'+data.trigger.uid, {
+        request.put(app.config.backend.url + 'widgets/'+data.widget_uid+'/plan', {
                 form: { plan: data.plan }
             }, function (err, response, body) {
             try {
