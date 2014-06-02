@@ -200,7 +200,7 @@ var self = module.exports = function (app)
                 if (data && data.errors) {
                     console.log(data.errors);
                 } else {
-                    app.publish('widget:payment:transaction', { transaction: data.transaction, agent_uid: data. agent_uid, widget_uid: data.widget_uid });
+                    app.publish('widget:payment:transaction', { transaction: data.transaction, url: data.url, agent_uid: data. agent_uid, widget_uid: data.widget_uid });
                 }
             } catch(e) {
                 console.log(data);
