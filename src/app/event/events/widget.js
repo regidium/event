@@ -179,6 +179,7 @@ var self = module.exports = function (app)
      *
      * @param Object data {
      *   Object payment    - метод оплаты
+     *   string agent_uid  - UID агента
      *   string widget_uid - UID виджета
      * }
      *
@@ -190,7 +191,7 @@ var self = module.exports = function (app)
         console.log('Redis widget:payment:made', data);
 
         // Сохраняем триггер виджета в БД
-        request.post(app.config.backend.url + 'widgets/'+data.widget_uid+'/transactions', {
+        request.post(app.config.backend.url + 'widgets/'+data.widget_uid+'/transactions/'+data.agent_uid, {
                 form: { payment: data.payment }
             }, function (err, response, data) {
             try {
@@ -199,7 +200,7 @@ var self = module.exports = function (app)
                 if (data && data.errors) {
                     console.log(data.errors);
                 } else {
-                    app.publish('widget:payment:transaction', { transaction: data.transaction, widget_uid: data.widget_uid });
+                    app.publish('widget:payment:transaction', { transaction: data.transaction, agent_uid: data. agent_uid, widget_uid: data.widget_uid });
                 }
             } catch(e) {
                 console.log(data);
