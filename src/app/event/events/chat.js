@@ -63,11 +63,11 @@ var self = module.exports = function (app)
     app.on('chat:connect', function (data) {
         console.log('Redis chat:connect');
 
+        var status = 'online';
+
         // Если пользователь обновился находясь В чате, тогда не обновляем статус
         if (data.chat.old_status == 2) {
-            var status = 'chatting';
-        } else {
-            var status = 'online';
+            status = 'chatting';
         }
 
         // Записываем в БД
@@ -545,6 +545,41 @@ var self = module.exports = function (app)
                         console.log(body.error);
                     } else {
                         app.publish('chat:url:changed', { new_url: data.new_url, chat_uid: data.chat_uid, widget_uid: data.widget_uid });
+                    }
+                } catch(e) {
+                    // Ошибка сервера
+                    console.log(body);
+                }
+            }
+        );
+    });
+
+
+    /**
+     * Изменен referrer сайта
+     *
+     * @param Object data {
+     *   string referrer   - Referrer сайта
+     *   string chat_uid   - UID чата
+     *   string widget_uid - UID виджета
+     * }
+     */
+    app.on('chat:referrer:change', function (data) {
+        console.log('Redis chat:referrer:change');
+
+        // Записываем в БД
+        request.patch(app.config.backend.url + 'widgets/'+data.widget_uid+'/chats/'+data.chat_uid+'/referrer', {
+                form: { referrer: encodeURIComponent(data.referrer) }
+            }, function (err, response, body) {
+                try {
+                    body = JSON.parse(body);
+                    // Сервер вернул ошибку
+                    if (body && body.errors) {
+                        console.log(body.errors);
+                    } else if (body && body.error) {
+                        console.log(body.error);
+                    } else {
+                        app.publish('chat:referrer:changed', { referrer: body.referrer, keywords: body.keywords, chat_uid: data.chat_uid, widget_uid: data.widget_uid });
                     }
                 } catch(e) {
                     // Ошибка сервера

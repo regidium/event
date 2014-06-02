@@ -192,17 +192,17 @@ var self = module.exports = function (app)
         // Сохраняем триггер виджета в БД
         request.post(app.config.backend.url + 'widgets/'+data.widget_uid+'/transactions', {
                 form: { payment: data.payment }
-            }, function (err, response, transaction) {
+            }, function (err, response, data) {
             try {
-                transaction = JSON.parse(transaction);
+                data = JSON.parse(data);
                 // Сервер вернул ошибку
-                if (transaction && transaction.errors) {
-                    console.log(transaction.errors);
+                if (data && data.errors) {
+                    console.log(data.errors);
                 } else {
-                    app.publish('widget:payment:transaction', { transaction: transaction, widget_uid: data.widget_uid });
+                    app.publish('widget:payment:transaction', { transaction: data.transaction, widget_uid: data.widget_uid });
                 }
             } catch(e) {
-                console.log(transaction);
+                console.log(data);
             }
         });
     });
