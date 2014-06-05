@@ -41,7 +41,7 @@ var self = module.exports = function (app)
                     // Оповещаем слушателей о создании чата
                     app.publish('chat:created', { chat: chat, widget_uid: data.widget_uid, socket_id: data.socket_id });
                     // Оповещаем слушателей о подключении чата
-                    app.publish('chat:connected', { chat: chat, widget_uid: data.widget_uid });
+                    //app.publish('chat:connected', { chat: chat, widget_uid: data.widget_uid });
                 }
             } catch(e) {
                 console.log(chat);
@@ -295,7 +295,7 @@ var self = module.exports = function (app)
                         // Устананавливаем статус чата "В чате"
                         data.chat.status = 2;
                         // Оповещаем слушателей о смене статуса чата
-                        app.publish('chat:connected', { chat: data.chat, widget_uid: data.widget_uid });
+                        app.publish('chat:status:changed', { chat: data.chat, widget_uid: data.widget_uid });
                     }
                 }
             } catch(e) {
@@ -587,6 +587,39 @@ var self = module.exports = function (app)
                 }
             }
         );
+    });
+
+    /**
+     * Робот отправил сообщение
+     *
+     * @param Object data {
+     *   Object message    - данные сообщения
+     *   string chat_uid   - UID чата
+     *   string widget_uid - UID виджета
+     * }
+     *
+     * @publish chat:message:sended:robot
+     */
+    app.on('chat:message:send:robot', function (data) {
+        console.log('Redis chat:message:send:robot');
+
+        request.post({
+            url: app.config.backend.url + 'widgets/'+data.widget_uid+'/chats/'+data.chat_uid+'/messages',
+            form: data.message
+        }, function (err, response, chat_message) {
+            try {
+                chat_message = JSON.parse(chat_message);
+                // Сервер вернул ошибку
+                if (chat_message && chat_message.errors) {
+                    console.log(chat_message.errors);
+                } else {
+                    app.publish('chat:message:sended:robot', { message: chat_message, chat_uid: data.chat_uid, widget_uid: data.widget_uid });
+                }
+            } catch(e) {
+                // Ошибка сервера
+                console.log(chat_message);
+            }
+        });
     });
 
 };

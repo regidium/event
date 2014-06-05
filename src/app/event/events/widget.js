@@ -60,10 +60,7 @@ var self = module.exports = function (app)
                 if (body && body.errors) {
                     console.log(body.errors);
                 } else {
-                    var res = {};
-                    res.widget_uid = body.uid;
-                    res.settings = body.settings;
-                    app.publish('widget:setting:style:edited', res);
+                    app.publish('widget:setting:style:edited', { widget_uid: body.uid,  settings: body.settings });
                 }
             } catch(e) {
                 console.log(body);
