@@ -6,6 +6,7 @@ var self = module.exports = function (app)
      * Получение информации о виджете
      *
      * @param Object data {
+     *   int    to         - кто запрашивает
      *   string widget_uid - UID виджета
      *   string socket_id  - ID сокета
      * }
@@ -18,7 +19,7 @@ var self = module.exports = function (app)
         console.log('Redis widget:info:get');
 
         // Создаем пользователя в БД
-        request.get(app.config.backend.url + 'widgets/'+data.widget_uid, {}, function (err, response, widget) {
+        request.get(app.config.backend.url + 'widgets/'+data.widget_uid, {to: data.to}, function (err, response, widget) {
             try {
                 widget = JSON.parse(widget);
                 // Сервер вернул ошибку
