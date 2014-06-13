@@ -20,33 +20,15 @@ var self = module.exports = function (app)
         console.log('Redis chat:create');
 
         // Создаем пользователя в БД
-        request.post(app.config.backend.url + 'widgets/'+data.widget_uid+'/chats', {
-            form: data.chat
-        }, function (err, response, chat) {
-            try {
-                chat = JSON.parse(chat);
-                // Сервер вернул ошибку
-                if (chat && chat.errors) {
-                    console.log(chat.errors);
-                } else if (chat && chat.error) {
-                    console.log(chat.error);
-                } else {
-                    // Записываем данные чата и пользователя в Redis
-                    // app.store.hset('chats:' + data.widget_uid, chat.uid, JSON.stringify({ chat: chat }), function(e, r) {
-                    //     // Оповещаем слушателей о создании чата
-                    //     app.publish('chat:created', { chat: chat, widget_uid: data.widget_uid, socket_id: data.socket_id });
-                    //     // Оповещаем слушателей о подключении чата
-                    //     app.publish('chat:connected', { chat: chat, widget_uid: data.widget_uid });
-                    // });
+        request.post(app.config.backend.url + 'widgets/'+data.widget_uid+'/chats',
+            { form: data.chat },
+            function (err, response, body) {
+                prepareResponse(body, data, function(chat) {
                     // Оповещаем слушателей о создании чата
                     app.publish('chat:created', { chat: chat, widget_uid: data.widget_uid, socket_id: data.socket_id });
-                    // Оповещаем слушателей о подключении чата
-                    //app.publish('chat:connected', { chat: chat, widget_uid: data.widget_uid });
-                }
-            } catch(e) {
-                console.log(chat);
+                });
             }
-        });
+        );
     });
 
     /**
@@ -71,25 +53,13 @@ var self = module.exports = function (app)
         }
 
         // Записываем в БД
-        request.put(app.config.backend.url + 'widgets/'+data.widget_uid+'/chats/'+data.chat.uid+'/'+status, {}, function (err, response, body) {
-                try {
-                    body = JSON.parse(body);
-                    // Сервер вернул ошибку
-                    if (body && body.errors) {
-                        console.log(body.errors);
-                    } else {
-                        // Записываем данные чата в Redis
-                        // app.store.hset('chats:' + data.widget_uid, data.chat.uid, JSON.stringify({ chat: data.chat }), function(e, r) {
-                        //     // Оповещаем слушателей о подключении чата
-                        //     app.publish('chat:connected', { chat: data.chat, widget_uid: data.widget_uid });
-                        // });
-                        // Оповещаем слушателей о подключении чата
-                        app.publish('chat:connected', { chat: data.chat, widget_uid: data.widget_uid });
-                    }
-                } catch(e) {
-                    // Ошибка сервера
-                    console.log(body);
-                }
+        request.put(app.config.backend.url + 'widgets/'+data.widget_uid+'/chats/'+data.chat.uid+'/'+status,
+            {},
+            function (err, response, body) {
+                prepareResponse(body, data, function() {
+                    // Оповещаем слушателей
+                    app.publish('chat:connected', { chat: data.chat, widget_uid: data.widget_uid });
+                });
             }
         );
     });
@@ -111,24 +81,10 @@ var self = module.exports = function (app)
         request.put(app.config.backend.url + 'widgets/'+data.widget_uid+'/chats/'+data.chat_uid+'/offline',
             {},
             function (err, response, body) {
-                try {
-                    body = JSON.parse(body);
-                    // Сервер вернул ошибку
-                    if (body && body.errors) {
-                        console.log(body.errors);
-                    } else {
-                        // // Удаляем данные о чате из Redis
-                        // app.store.hdel('chats:' + data.widget_uid, data.chat_uid, function(e, r) {
-                        //     // Оповещаем слушателей об отключении чата
-                        //     app.publish('chat:disconnected', { chat_uid: data.chat_uid, widget_uid: data.widget_uid });
-                        // });
-                        // Оповещаем слушателей об отключении чата
-                        app.publish('chat:disconnected', { chat_uid: data.chat_uid, widget_uid: data.widget_uid });
-                    }
-                } catch(e) {
-                    // Ошибка сервера
-                    console.log(body);
-                }
+                prepareResponse(body, data, function() {
+                    // Оповещаем слушателей
+                    app.publish('chat:disconnected', { chat_uid: data.chat_uid, widget_uid: data.widget_uid });
+                });
             }
         );
     });
@@ -150,19 +106,10 @@ var self = module.exports = function (app)
         request.put(app.config.backend.url + 'widgets/'+data.widget_uid+'/chats/'+data.chat_uid+'/closed',
             {},
             function (err, response, body) {
-                try {
-                    body = JSON.parse(body);
-                    // Сервер вернул ошибку
-                    if (body && body.errors) {
-                        console.log(body.errors);
-                    } else {
-                        // Оповещаем слушателей об закрытии чата
-                        app.publish('chat:closed', { chat_uid: data.chat_uid, widget_uid: data.widget_uid });
-                    }
-                } catch(e) {
-                    // Ошибка сервера
-                    console.log(body);
-                }
+                prepareResponse(body, data, function() {
+                    // Оповещаем слушателей
+                    app.publish('chat:closed', { chat_uid: data.chat_uid, widget_uid: data.widget_uid });
+                });
             }
         );
     });
@@ -186,33 +133,11 @@ var self = module.exports = function (app)
         // Записываем в БД
         request.put(app.config.backend.url + 'widgets/'+data.widget_uid+'/chats/'+data.chat.uid+'/agents/'+data.agent.uid,
             {},
-            function (err, response, chat) {
-                try {
-                    chat = JSON.parse(chat);
-                    // Сервер вернул ошибку
-                    if (chat && chat.errors) {
-                        console.log(chat.errors);
-                    } else {
-                        // Добавляем агента в чат в Redis
-                        // app.store.hget('chats:' + data.widget_uid, data.chat_uid, function(e, r) {
-                        //     var d = JSON.parse(r);
-                        //     var chat = d.chat;
-                        //     d.agent = data.person;
-
-                        //     // Добавляем агента в чат в Redis
-                        //     app.store.hset('chats:' + data.widget_uid, data.chat_uid, JSON.stringify(d), function(e2, r2) {
-                        //         // Оповещаем слушателей
-                        //         app.publish('chat:agent:entered', { chat: chat, person: data.person, widget_uid: data.widget_uid });
-                        //     });
-                        // });
-
-                        // Оповещаем слушателей
-                        app.publish('chat:agent:entered', { agent: data.agent, chat: chat, widget_uid: data.widget_uid });
-                    }
-                } catch(e) {
-                    // Ошибка сервера
-                    console.log(chat);
-                }
+            function (err, response, body) {
+                prepareResponse(body, data, function(chat) {
+                    // Оповещаем слушателей
+                    app.publish('chat:agent:entered', { agent: data.agent, chat: chat, widget_uid: data.widget_uid });
+                });
             }
         );
     });
@@ -236,19 +161,10 @@ var self = module.exports = function (app)
         // Записываем в БД
         request.del(app.config.backend.url + 'widgets/'+data.widget_uid+'/chats/'+data.chat_uid+'/agents/'+data.agent.uid,
             function (err, response, body) {
-                try {
-                    body = JSON.parse(body);
-                    // Сервер вернул ошибку
-                    if (body && body.errors) {
-                        console.log(body.errors);
-                    } else {
-                        // Оповещаем слушателей
-                        app.publish('chat:agent:leaved', { agent: data.agent, chat: data.chat_uid, widget_uid: data.widget_uid });
-                    }
-                } catch(e) {
-                    // Ошибка сервера
-                    console.log(body);
-                }
+                prepareResponse(body, data, function(chat) {
+                    // Оповещаем слушателей
+                    app.publish('chat:agent:entered', { agent: data.agent, chat: chat, widget_uid: data.widget_uid });
+                });
             }
         );
     });
@@ -267,41 +183,24 @@ var self = module.exports = function (app)
      * @publish chat:message:sended:user
      */
     app.on('chat:message:send:user', function (data) {
-        console.log('Redis chat:message:send:user');
+        console.log('Redis chat:message:send:user', data);
 
         // Записываем в БД
         request.post(app.config.backend.url + 'widgets/'+data.widget_uid+'/chats/'+data.chat.uid+'/messages', {
             form: data.message
-        }, function (err, response, chat_message) {
-            try {
-                chat_message = JSON.parse(chat_message);
-                // Сервер вернул ошибку
-                if (chat_message && chat_message.errors) {
-                    console.log(chat_message.errors);
-                } else {
-                    // Записываем данные сообщения в Redis
-                    // app.store.hmset('messages:' + data.chat.uid + ':' + data.chat.uid, chat_message.uid, JSON.stringify({ message: chat_message.uid, person: data.person, widget_uid: data.widget_uid, chat.uid: data.chat.uid, date: data.date, text: data.text }), function(e, r) {
-                    //     // Оповещаем о смене состония чата
-                    //     app.publish('chat:connected', { person: person, chat: chat, widget_uid: data.widget_uid });
-                    //     // Оповещаем слушателей о создании сообщения
-                    //     app.publish('chat:message:sended:user', { message: chat_message.uid, person: data.person, widget_uid: data.widget_uid, chat_uid: data.chat.uid, date: data.date, text: data.text });
-                    // });
+        }, function (err, response, body) {
+            prepareResponse(body, data, function(chat_message) {
+                // Оповещаем слушателей
+                app.publish('chat:message:sended:user', { message: chat_message, chat_uid: data.chat.uid, widget_uid: data.widget_uid });
 
-                    // Оповещаем слушателей о создании сообщения
-                    app.publish('chat:message:sended:user', { message: chat_message, chat_uid: data.chat.uid, widget_uid: data.widget_uid });
-
-                    // Проверяем статус чата
-                    if (data.chat.status != 2) {
-                        // Устананавливаем статус чата "В чате"
-                        data.chat.status = 2;
-                        // Оповещаем слушателей о смене статуса чата
-                        app.publish('chat:status:changed', { chat: data.chat, widget_uid: data.widget_uid });
-                    }
+                // Проверяем статус чата
+                if (data.chat.status != 2) {
+                    // Устананавливаем статус чата "В чате"
+                    data.chat.status = 2;
+                    // Оповещаем слушателей о смене статуса чата
+                    app.publish('chat:status:changed', { chat: data.chat, widget_uid: data.widget_uid });
                 }
-            } catch(e) {
-                // Ошибка сервера
-                console.log(chat_message);
-            }
+            });
         });
     });
 
@@ -319,28 +218,15 @@ var self = module.exports = function (app)
     app.on('chat:message:send:agent', function (data) {
         console.log('Redis chat:message:send:agent');
 
-        request.post({
-            url: app.config.backend.url + 'widgets/'+data.widget_uid+'/chats/'+data.chat_uid+'/messages',
-            form: data.message
-        }, function (err, response, chat_message) {
-                try {
-                    chat_message = JSON.parse(chat_message);
-                    // Сервер вернул ошибку
-                    if (chat_message && chat_message.errors) {
-                        console.log(chat_message.errors);
-                    } else {
-                        // Записываем данные сообщения в Redis
-                        //app.store.hmset('messages:' + data.chat_uid + ':' +data.chat_uid, chat_message.uid, JSON.stringify(data.message), function(e, r) {
-                            // Оповещаем слушателей о создании сообщения
-                            //app.publish('chat:message:sended:agent', { uid: chat_message.uid, person: data.person, widget_uid: data.widget_uid, chat_uid: data.chat_uid, date: data.date, text: data.text });
-                        //});
-                        app.publish('chat:message:sended:agent', { message: chat_message, chat_uid: data.chat_uid, widget_uid: data.widget_uid });
-                    }
-                } catch(e) {
-                    // Ошибка сервера
-                    console.log(chat_message);
-                }
-        });
+        request.post(app.config.backend.url + 'widgets/'+data.widget_uid+'/chats/'+data.chat_uid+'/messages',
+            { form: data.message },
+            function (err, response, body) {
+                prepareResponse(body, data, function(chat_message) {
+                    // Оповещаем слушателей
+                    app.publish('chat:message:sended:agent', { message: chat_message, chat_uid: data.chat_uid, widget_uid: data.widget_uid });
+                });
+            }
+        );
     });
 
     /**
@@ -362,19 +248,10 @@ var self = module.exports = function (app)
         request.get(app.config.backend.url + 'widgets/'+data.widget_uid+'/chats/'+data.agent_uid+'/existed',
             {},
             function (err, response, body) {
-                try {
-                    body = JSON.parse(body);
-                    // Сервер вернул ошибку
-                    if (body && body.errors) {
-                        console.log(body.errors);
-                    } else {
-                        // Оповещаем слушателей
-                        app.publish('chat:existed:list', body);
-                    }
-                } catch(e) {
-                    // Ошибка сервера
-                    console.log(body);
-                }
+                prepareResponse(body, data, function(chats) {
+                    // Оповещаем слушателей
+                    app.publish('chat:existed:list', chats);
+                });
             }
         );
     });
@@ -398,20 +275,11 @@ var self = module.exports = function (app)
         // Читаем из БД
         request.get(app.config.backend.url + 'widgets/'+data.widget_uid+'/chats/online',
             {},
-            function (err, response, chats) {
-                try {
-                    chats = JSON.parse(chats);
-                    // Сервер вернул ошибку
-                    if (chats && chats.errors) {
-                        console.log(chats.errors);
-                    } else {
-                        // Оповещаем слушателей
-                        app.publish('chat:online:list', { chats: chats, widget_uid: data.widget_uid });
-                    }
-                } catch(e) {
-                    // Ошибка сервера
-                    console.log(chats);
-                }
+            function (err, response, body) {
+                prepareResponse(body, data, function(chats) {
+                    // Оповещаем слушателей
+                    app.publish('chat:online:list', { chats: chats, widget_uid: data.widget_uid });
+                });
             }
         );
     });
@@ -435,20 +303,10 @@ var self = module.exports = function (app)
         request.get(app.config.backend.url + 'widgets/'+data.widget_uid+'/chats/archive',
             {},
             function (err, response, body) {
-                try {
-                    body = JSON.parse(body);
-                    // Сервер вернул ошибку
-                    if (body && body.errors) {
-                        console.log(body.errors);
-                    } else {
-                        //body.widget_uid = data.widget_uid;
-                        // Оповещаем слушателей
-                        app.publish('chat:archives:list', body);
-                    }
-                } catch(e) {
-                    // Ошибка сервера
-                    console.log(body);
-                }
+                prepareResponse(body, data, function(chats) {
+                    // Оповещаем слушателей
+                    app.publish('chat:archives:list', chats);
+                });
             }
         );
     });
@@ -469,22 +327,13 @@ var self = module.exports = function (app)
         console.log('Redis chat:user:auth');
 
         // Записываем в БД
-        request.put(app.config.backend.url + 'widgets/'+data.widget_uid+'/chats/'+data.chat_uid+'/auth', {
-                form: data.user
-            }, function (err, response, body) {
-                try {
-                    body = JSON.parse(body);
-                    // Сервер вернул ошибку
-                    if (body && body.errors) {
-                        console.log(body.errors);
-                    } else {
-                        // Оповещаем слушателей об авторизации пользователя
-                        app.publish('chat:user:authed', { user: data.user, chat_uid: data.chat_uid, widget_uid: data.widget_uid, socket_id: data.socket_id });
-                    }
-                } catch(e) {
-                    // Ошибка сервера
-                    console.log(body);
-                }
+        request.put(app.config.backend.url + 'widgets/'+data.widget_uid+'/chats/'+data.chat_uid+'/auth',
+            { form: data.user },
+            function (err, response, body) {
+                prepareResponse(body, data, function() {
+                    // Оповещаем слушателей
+                    app.publish('chat:user:authed', { user: data.user, chat_uid: data.chat_uid, widget_uid: data.widget_uid, socket_id: data.socket_id });
+                });
             }
         );
     });
@@ -504,18 +353,9 @@ var self = module.exports = function (app)
         // Записываем в БД
         request.put(app.config.backend.url + 'widgets/'+data.widget_uid+'/chats/'+data.chat_uid+'/messages/'+data.message_uid+'/read', {
             }, function (err, response, body) {
-                try {
-                    body = JSON.parse(body);
-                    // Сервер вернул ошибку
-                    if (body && body.errors) {
-                        console.log(body.errors);
-                    } else {
-                        // @todo
-                    }
-                } catch(e) {
-                    // Ошибка сервера
-                    console.log(body);
-                }
+                prepareResponse(body, data, function() {
+                    // @todo
+                });
             }
         );
     });
@@ -533,23 +373,12 @@ var self = module.exports = function (app)
         console.log('Redis chat:url:change');
 
         // Записываем в БД
-        request.patch(app.config.backend.url + 'widgets/'+data.widget_uid+'/chats/'+data.chat_uid+'/url', {
-            form: { current_url: encodeURIComponent(data.new_url) }
-        }, function (err, response, body) {
-                try {
-                    body = JSON.parse(body);
-                    // Сервер вернул ошибку
-                    if (body && body.errors) {
-                        console.log(body.errors);
-                    } else if (body && body.error) {
-                        console.log(body.error);
-                    } else {
-                        app.publish('chat:url:changed', { new_url: data.new_url, chat_uid: data.chat_uid, widget_uid: data.widget_uid });
-                    }
-                } catch(e) {
-                    // Ошибка сервера
-                    console.log(body);
-                }
+        request.patch(app.config.backend.url + 'widgets/'+data.widget_uid+'/chats/'+data.chat_uid+'/url',
+            { form: { current_url: encodeURIComponent(data.new_url) } },
+            function (err, response, body) {
+                prepareResponse(body, data, function() {
+                    app.publish('chat:url:changed', { new_url: data.new_url, chat_uid: data.chat_uid, widget_uid: data.widget_uid });
+                });
             }
         );
     });
@@ -568,23 +397,12 @@ var self = module.exports = function (app)
         console.log('Redis chat:referrer:change');
 
         // Записываем в БД
-        request.patch(app.config.backend.url + 'widgets/'+data.widget_uid+'/chats/'+data.chat_uid+'/referrer', {
-                form: { referrer: encodeURIComponent(data.referrer) }
-            }, function (err, response, body) {
-                try {
-                    body = JSON.parse(body);
-                    // Сервер вернул ошибку
-                    if (body && body.errors) {
-                        console.log(body.errors);
-                    } else if (body && body.error) {
-                        console.log(body.error);
-                    } else {
-                        app.publish('chat:referrer:changed', { referrer: body.referrer, keywords: body.keywords, chat_uid: data.chat_uid, widget_uid: data.widget_uid });
-                    }
-                } catch(e) {
-                    // Ошибка сервера
-                    console.log(body);
-                }
+        request.patch(app.config.backend.url + 'widgets/'+data.widget_uid+'/chats/'+data.chat_uid+'/referrer',
+            { form: { referrer: encodeURIComponent(data.referrer) } },
+            function (err, response, body) {
+                prepareResponse(body, data, function(info) {
+                    app.publish('chat:referrer:changed', { referrer: info.referrer, keywords: info.keywords, chat_uid: data.chat_uid, widget_uid: data.widget_uid });
+                });
             }
         );
     });
@@ -603,23 +421,47 @@ var self = module.exports = function (app)
     app.on('chat:message:send:robot', function (data) {
         console.log('Redis chat:message:send:robot');
 
-        request.post({
-            url: app.config.backend.url + 'widgets/'+data.widget_uid+'/chats/'+data.chat_uid+'/messages',
-            form: data.message
-        }, function (err, response, chat_message) {
-            try {
-                chat_message = JSON.parse(chat_message);
-                // Сервер вернул ошибку
-                if (chat_message && chat_message.errors) {
-                    console.log(chat_message.errors);
-                } else {
+        request.post(app.config.backend.url + 'widgets/'+data.widget_uid+'/chats/'+data.chat_uid+'/messages',
+            { form: data.message },
+            function (err, response, body) {
+                prepareResponse(body, data, function(chat_message) {
                     app.publish('chat:message:sended:robot', { message: chat_message, chat_uid: data.chat_uid, widget_uid: data.widget_uid });
-                }
-            } catch(e) {
-                // Ошибка сервера
-                console.log(chat_message);
+                });
             }
-        });
+        );
     });
+
+    var prepareResponse = function(response, data, success, error) {
+        try {
+            var parsed_response = JSON.parse(response);
+
+            // Сервер вернул ошибку
+            if (parsed_response && parsed_response.errors) {
+                console.error(parsed_response.errors);
+
+                app.publish('chat:error:sended', data);
+
+                if (error) {
+                    error(parsed_response);
+                }
+            } else {
+                if (success) {
+                    success(parsed_response)
+                }
+            }
+        } catch(e) {
+            // Ошибка парсинга
+            console.error(response);
+
+            if (error) {
+
+                app.publish('chat:error:sended', data);
+
+                if (error) {
+                    error(response);
+                }
+            }
+        }
+    };
 
 };
